@@ -37,11 +37,16 @@ class FileSystemStorage(Storage):
 
 class DumbStorage(Storage):
 
+    def __init__(self):
+        super()
+        # this is purely for testing purpose
+        self.endpoint = os.getenv('TIMONE_ENDPOINT_URL')
+
     def object_exists(self, repo, oid):
         return True
 
     def get_object_upload_url(self, repo, oid):
-        return "/{}/object/{}".format(repo, oid)
+        return "{}/{}/object/{}".format(self.endpoint,repo, oid)
 
     def get_object_download_url(self, repo, oid):
-        return "/{}/object/{}".format(repo, oid)
+        return "{}/{}/object/{}".format(self.endpoint,repo, oid)
