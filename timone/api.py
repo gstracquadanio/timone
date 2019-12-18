@@ -11,7 +11,7 @@ BATCH_TRANSFER_BASIC: str = "basic"
 @dataclass
 class BatchBase(object):
     def as_dict(self):
-        return {k: v for k, v in self.__dict__ if v is not None}
+        return {k: v for k,v in self.__dict__.items() if v is not None}
 
 
 @dataclass
@@ -32,7 +32,7 @@ class BatchObjectError(BatchBase):
 class BatchObject(BatchBase):
     oid: str = field(default=None)
     size: int = field(default=None)
-    authenticated: bool = field(default=False)
+    authenticated: bool = field(default=True)
     actions: dict = field(default_factory=dict)
     error: BatchObjectError = field(default=None)
 

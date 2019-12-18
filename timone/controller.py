@@ -3,13 +3,18 @@ from dataclasses import asdict
 
 import timone.api as api
 from timone.api import (
+    BatchBase,
     BatchRequest,
     BatchResponse,
     BatchObject,
     BatchObjectError,
     BatchObjectAction,
 )
-from timone.errors import BadRequestException, UnknownBatchOperationException
+from timone.errors import (
+    BadBatchRequestException,
+    UnknownBatchOperationException,
+    StorageException,
+)
 from timone.storage import DumbStorage
 
 
@@ -21,7 +26,6 @@ class BatchController(object):
         # parsing the Batch API request
         try:
             api_request = BatchRequest(**(json.load(request.stream)))
-            print(api_request.operation)
             if (
                 api_request.operation == api.BATCH_OPERATION_DOWNLOAD
                 or api_request.operation == api.BATCH_OPERATION_UPLOAD
@@ -43,21 +47,30 @@ class BatchController(object):
                         )
                     # if the requests specifies an existing object, add a download action
                     else:
-                        if obj_exist:
-                            obj.actions[api_request.operation] = BatchObjectAction(
-                                self.store.get_object_download_url(repo, obj.oid)
-                            )
-                        else:
-                            # the object does not exist. Send an object error
-                            obj.error = BatchObjectError(
-                                "404",
-                                "Object {} does not exist on {}".format(obj.oid, repo),
-                            )
+                        if api_request.operation == api.BATCH_OPERATION_DOWNLOAD:
+                            if obj_exist:
+                                obj.actions[api_request.operation] = BatchObjectAction(
+                                    self.store.get_object_download_url(repo, obj.oid)
+                                )
+                            else:
+                                # the object does not exist. Send an object error
+                                obj.error = BatchObjectError(
+                                    "404",
+                                    "Object {} does not exist on {}".format(
+                                        obj.oid, repo
+                                    ),
+                                )
 
                     api_response.objects.append(obj)
-                return json.dumps(asdict(api_response))
+                return json.dumps(
+                    api_response,
+                    default=lambda x: x.as_dict()
+                    if isinstance(x, BatchBase)
+                    else x.__dict__,
+                )
             else:
                 raise UnknownBatchOperationException(repo, api_request.operation)
         except json.JSONDecodeError:
-            raise BadRequestException(repo)
-
+            raise BadBatchRequestException(repo)
+        except StorageException:
+            raise UnknownBatchOperationException(repo, api_request.operation)

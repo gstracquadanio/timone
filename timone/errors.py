@@ -1,4 +1,4 @@
-class BadRequestException(Exception):
+class BadBatchRequestException(Exception):
 
     def __init__(self, repo):
         super()
@@ -10,3 +10,7 @@ class UnknownBatchOperationException(Exception):
         super()
         self.repo = repo
         self.operation = operation
+
+class StorageException(Exception):
+    def __init__(self):
+        super()

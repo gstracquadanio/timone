@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 import timone.api as api
 from timone.api import BatchRequest, BatchResponse
 from timone.controller import BatchController
-from timone.errors import BadRequestException, UnknownBatchOperationException
-from timone.storage import DumbStorage
+from timone.errors import BadBatchRequestException, UnknownBatchOperationException
+from timone.storage import DumbStorage, S3Storage
 
 
 
@@ -24,7 +24,7 @@ class BatchObjectResource(object):
             resp.status = falcon.HTTP_200
             resp.content_type = api.BATCH_CONTENT_TYPE
             resp.body = api_response
-        except BadRequestException:
+        except BadBatchRequestException:
             # error decoding the request
             resp.status = falcon.HTTP_501
         except UnknownBatchOperationException:
@@ -32,7 +32,7 @@ class BatchObjectResource(object):
             resp.status = falcon.HTTP_501
 
 load_dotenv(verbose=True)
-storage = DumbStorage()
+storage = S3Storage()
 controller = BatchController(storage)
 resource = BatchObjectResource(controller)
 server = falcon.API()
