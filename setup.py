@@ -34,10 +34,4 @@ setup(
     include_package_data=True,
     zip_safe=False,
 
-    # all tools have cli interface
-    entry_points={
-        'console_scripts': [
-            'timone=timone.cli:main',
-        ],
-    },
 )
