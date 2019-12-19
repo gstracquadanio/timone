@@ -1,17 +1,18 @@
 import logging
 import falcon
 import json
+import base64
 from dataclasses import asdict
 
 from dotenv import load_dotenv
+import jwt
 
 import timone.api as api
 from timone.api import BatchRequest, BatchResponse
 from timone.controller import BatchController
 from timone.errors import BadBatchRequestException, UnknownBatchOperationException
 from timone.storage import DumbStorage, S3Storage
-
-
+from timone.auth import TokenAuthMiddleware
 
 class BatchObjectResource(object):
     def __init__(self, controller):
@@ -31,9 +32,10 @@ class BatchObjectResource(object):
             # request decoded, but action unkown
             resp.status = falcon.HTTP_501
 
+
 load_dotenv(verbose=True)
-storage = S3Storage()
+storage = DumbStorage()
 controller = BatchController(storage)
 resource = BatchObjectResource(controller)
-server = falcon.API()
+server = falcon.API(middleware=[TokenAuthMiddleware()])
 server.add_route("/{repo}/info/lfs/objects/batch", resource)

@@ -6,7 +6,8 @@ from botocore.exceptions import ClientError
 
 from timone.errors import StorageException
 
-class Storage(object):
+
+class StorageSystem(object):
     def __init__(self):
         super()
 
@@ -26,7 +27,7 @@ class Storage(object):
         return self.get_object_uri(repo, oid)
 
 
-class DumbStorage(Storage):
+class DumbStorage(StorageSystem):
     def __init__(self):
         super()
         # this is purely for testing
@@ -42,7 +43,7 @@ class DumbStorage(Storage):
         return "{}/{}/object/{}".format(self.endpoint, repo, oid)
 
 
-class FileSystemStorage(Storage):
+class FileSystemStorage(StorageSystem):
     def __init__(self):
         self.url = os.getenv("URL")
         self.base_dir = Path(os.getenv("STORAGE_FS_BASE_DIR"))
@@ -57,11 +58,12 @@ class FileSystemStorage(Storage):
         return self.url.format(repo, oid)
 
 
-class S3Storage(Storage):
+class S3Storage(StorageSystem):
     def __init__(self):
         self.client = boto3.client(
             "s3",
             endpoint_url=os.getenv("TIMONE_STORAGE_S3_URL"),
+            region_name=os.getenv("TIMONE_STORAGE_S3_REGION"),
             aws_access_key_id=os.getenv("TIMONE_STORAGE_S3_KEY"),
             aws_secret_access_key=os.getenv("TIMONE_STORAGE_S3_SECRET"),
         )
@@ -70,15 +72,15 @@ class S3Storage(Storage):
         try:
             uri = str(self.get_object_uri(repo, oid))
             obj_list = self.client.list_objects_v2(
-                Bucket=os.getenv("TIMONE_STORAGE_S3_BUCKET"),
-                Prefix=uri,
+                Bucket=os.getenv("TIMONE_STORAGE_S3_BUCKET"), Prefix=uri
             )
-            for obj in obj_list.get('Contents', []):
-                if obj['Key'] == uri:
+            for obj in obj_list.get("Contents", []):
+                if obj["Key"] == uri:
                     return True
         except ClientError as ex:
-            raise StorageException()
-
+            raise StorageException(
+                repo, oid, "{} : {}".format("object_exists", str(ex))
+            )
         return False
 
     def get_object_upload_url(self, repo, oid):
@@ -91,8 +93,10 @@ class S3Storage(Storage):
                 },
             )
             return url
-        except ClientError:
-            raise StorageException()
+        except ClientError as ex:
+            raise StorageException(
+                repo, oid, "{} : {}".format("object_exists", str(ex))
+            )
 
     def get_object_download_url(self, repo, oid):
         try:
@@ -104,6 +108,7 @@ class S3Storage(Storage):
                 },
             )
             return url
-        except ClientError:
-            raise StorageException()
-
+        except ClientError as ex:
+            raise StorageException(
+                repo, oid, "{} : {}".format("object_exists", str(ex))
+            )

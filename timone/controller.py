@@ -73,4 +73,5 @@ class BatchController(object):
         except json.JSONDecodeError:
             raise BadBatchRequestException(repo)
         except StorageException:
+            print("storage error")
             raise UnknownBatchOperationException(repo, api_request.operation)
