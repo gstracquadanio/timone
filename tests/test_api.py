@@ -1,4 +1,4 @@
-import orjson as json
+import json
 from dataclasses import asdict
 from types import SimpleNamespace
 from timone.api import BatchRequest, BatchResponse, BatchObject

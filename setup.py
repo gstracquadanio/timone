@@ -11,11 +11,11 @@ setup(
     # package information
     name = 'timone',
     packages = find_packages(),
-    version = '0.0.1-dev',
+    version = '0.0.1',
     description = 'A lightweight server to handle Git LFS on different storage backends.',
     long_description = readme,
     license = 'MIT',
-    url='git@github.com:gstracquadanio/timone.git',
+    url='https://github.com/gstracquadanio/timone.git',
     keywords='',
 
     # author information
@@ -23,7 +23,12 @@ setup(
     author_email = 'dr.stracquadanio@gmail.com',
 
     # installation info and requirements
-    install_requires=[],
+    install_requires=[
+        "python-dotenv>=0.10.3",
+        "falcon>=2.0.0",
+        "boto3>=1.10",
+        "PyJWT>=1.7.1"
+    ],
     setup_requires=[],
 
     # test info and requirements

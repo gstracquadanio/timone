@@ -1,7 +1,7 @@
 
 class BadBatchRequestException(Exception):
 
-    def __init__(self, message=None):
+    def __init__(self, repo, message=None):
         super()
         self.message = message
 
@@ -13,9 +13,10 @@ class UnknownBatchOperationException(Exception):
         self.operation = operation
 
 class StorageException(Exception):
-    def __init__(self, repo, operation, message=None):
+    def __init__(self, repo, oid, operation, message=None):
         super()
         self.repo = repo
+        self.oid = oid
         self.operation = operation
         self.message = message
 

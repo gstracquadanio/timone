@@ -37,4 +37,7 @@ class TokenAuthMiddleware(object):
 
                     except jwt.exceptions.DecodeError:
                         raise falcon.HTTPUnauthorized("Token validation error")
-
+                    except jwt.ExpiredSignatureError:
+                        raise falcon.HTTPUnauthorized("Token validation error")
+                    except jwt.InvalidIssuerError:
+                        raise falcon.HTTPUnauthorized("Token validation error")

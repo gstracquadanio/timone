@@ -1,4 +1,5 @@
 import os
+import logging
 from pathlib import Path
 
 import boto3
@@ -34,6 +35,7 @@ class DumbStorage(StorageSystem):
         self.endpoint = os.getenv("TIMONE_ENDPOINT_URL")
 
     def object_exists(self, repo, oid):
+        logging.debug("repo: {} object: {}.".format(repo, oid))
         return True
 
     def get_object_upload_url(self, repo, oid):
@@ -78,9 +80,7 @@ class S3Storage(StorageSystem):
                 if obj["Key"] == uri:
                     return True
         except ClientError as ex:
-            raise StorageException(
-                repo, oid, "{} : {}".format("object_exists", str(ex))
-            )
+            raise StorageException(repo, oid, "object_exists", str(ex))
         return False
 
     def get_object_upload_url(self, repo, oid):
@@ -91,12 +91,11 @@ class S3Storage(StorageSystem):
                     "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
                     "Key": str(self.get_object_uri(repo, oid)),
                 },
+                ExpiresIn=int(os.getenv("TIMONE_OBJECT_EXPIRESIN")),
             )
             return url
         except ClientError as ex:
-            raise StorageException(
-                repo, oid, "{} : {}".format("object_exists", str(ex))
-            )
+            raise StorageException(repo, oid, "get_object_upload_url", str(ex))
 
     def get_object_download_url(self, repo, oid):
         try:
@@ -106,9 +105,8 @@ class S3Storage(StorageSystem):
                     "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
                     "Key": str(self.get_object_uri(repo, oid)),
                 },
+                ExpiresIn=int(os.getenv("TIMONE_OBJECT_EXPIRESIN")),
             )
             return url
         except ClientError as ex:
-            raise StorageException(
-                repo, oid, "{} : {}".format("object_exists", str(ex))
-            )
+            raise StorageException(repo, oid, "get_object_download_url", str(ex))

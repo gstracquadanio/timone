@@ -1,3 +1,4 @@
+import os
 import json
 from dataclasses import asdict
 
@@ -25,7 +26,9 @@ class BatchController(object):
     def handle(self, repo, request):
         # parsing the Batch API request
         try:
+            # parse the request
             api_request = BatchRequest(**(json.load(request.stream)))
+            # check if operation is a valid one
             if (
                 api_request.operation == api.BATCH_OPERATION_DOWNLOAD
                 or api_request.operation == api.BATCH_OPERATION_UPLOAD
@@ -42,15 +45,21 @@ class BatchController(object):
                         api_request.operation == api.BATCH_OPERATION_UPLOAD
                         and not obj_exist
                     ):
+                        # add an upload action
                         obj.actions[api_request.operation] = BatchObjectAction(
-                            self.store.get_object_upload_url(repo, obj.oid)
+                            self.store.get_object_upload_url(repo, obj.oid),
+                            expires_in=int(os.getenv("TIMONE_OBJECT_EXPIRESIN")),
                         )
                     # if the requests specifies an existing object, add a download action
                     else:
+                        # check if it is a download operation
                         if api_request.operation == api.BATCH_OPERATION_DOWNLOAD:
+                            # check if the object exist
                             if obj_exist:
+                                # add a download action
                                 obj.actions[api_request.operation] = BatchObjectAction(
-                                    self.store.get_object_download_url(repo, obj.oid)
+                                    self.store.get_object_download_url(repo, obj.oid),
+                                    expires_in=int(os.getenv("TIMONE_OBJECT_EXPIRESIN")),
                                 )
                             else:
                                 # the object does not exist. Send an object error
@@ -62,6 +71,8 @@ class BatchController(object):
                                 )
 
                     api_response.objects.append(obj)
+
+                # return JSON encoded response
                 return json.dumps(
                     api_response,
                     default=lambda x: x.as_dict()
@@ -72,6 +83,3 @@ class BatchController(object):
                 raise UnknownBatchOperationException(repo, api_request.operation)
         except json.JSONDecodeError:
             raise BadBatchRequestException(repo)
-        except StorageException:
-            print("storage error")
-            raise UnknownBatchOperationException(repo, api_request.operation)

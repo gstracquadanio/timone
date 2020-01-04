@@ -1,6 +1,6 @@
 # timone
 
-Current version: 0.0.1-dev
+Current version: 0.0.1
 
 A lightweight server to handle Git LFS on different storage backends.
 

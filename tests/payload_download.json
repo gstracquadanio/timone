@@ -1,0 +1,15 @@
+{
+    "operation": "download",
+    "transfers": "basic",
+    "ref": { "name": "refs/heads/master" },
+    "objects": [
+        {
+        "oid": "123",
+        "size": 123
+        },
+        {
+        "oid": "125",
+        "size": 125
+        }
+    ]
+}
