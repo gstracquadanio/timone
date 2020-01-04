@@ -1,4 +1,4 @@
-name: Python package
+name: Publish package
 
 on:
     push:
@@ -6,8 +6,7 @@ on:
             - refs/tags/*
 
 jobs:
-  package:
-    name: "Package building and publishing"
+  release:
     runs-on: ubuntu-latest
     needs: test
     steps:
@@ -16,9 +15,9 @@ jobs:
         uses: actions/setup-python@v1
         with:
           python-version: 3.8
-      - name: Install wheel
+      - name: Install wheel and twine
         run: pip install wheel twine
-      - name: Build packages
+      - name: Build package
         run: python setup.py sdist bdist_wheel
       - name: Publish package
         run: twine upload -u __token__ -p ${{ secrets.PYPI_TOKEN }} dist/*
