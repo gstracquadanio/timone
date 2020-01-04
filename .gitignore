@@ -3,6 +3,8 @@
 *
 
 # accepted files
+!.github
+!.github/**
 !docs
 !docs/*
 !tests
@@ -16,6 +18,7 @@
 !.editorconfig
 !.gitattributes
 !.gitignore
+!tox.ini
 !environment.yml
 !requirements.txt
 !LICENSE
