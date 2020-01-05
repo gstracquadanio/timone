@@ -1,6 +1,6 @@
 # timone
-![](https://github.com/gstracquadanio/timone/workflows/.github/workflows/main.yml/badge.svg)
-![](https://github.com/gstracquadanio/timone/workflows/.github/workflows/publish.yml/badge.svg)
+![](https://github.com/gstracquadanio/timone/workflows/Test%20package/badge.svg)
+![](https://github.com/gstracquadanio/timone/workflows/Publish%20package/badge.svg)
 
 Current version: 0.0.2
 
