@@ -1,10 +1,12 @@
 import os
 import logging
 from pathlib import Path
+import importlib
 
 import boto3
 from botocore.exceptions import ClientError
 
+import timone
 from timone.errors import StorageException
 
 
@@ -28,11 +30,27 @@ class StorageSystem(object):
         return self.get_object_uri(repo, oid)
 
 
+class StorageFactory(object):
+    @staticmethod
+    def get_storage():
+        # loading the storage system to use
+        try:
+            storage = getattr(
+                importlib.import_module("timone.storage"),
+                os.getenv("TIMONE_STORAGE", timone.DEFAULT_STORAGE),
+            )
+            return storage
+        except AttributeError as ex:
+            logging.error(
+                "Cannot find storage driver: {}.".format(os.getenv("TIMONE_STORAGE"))
+            )
+
+
 class DumbStorage(StorageSystem):
     def __init__(self):
         super()
         # this is purely for testing
-        self.endpoint = os.getenv("TIMONE_ENDPOINT_URL")
+        self.endpoint = os.getenv("TIMONE_ENDPOINT_URL", timone.DEFAULT_ENDPOINT_URL)
 
     def object_exists(self, repo, oid):
         logging.debug("repo: {} object: {}.".format(repo, oid))
@@ -91,7 +109,11 @@ class S3Storage(StorageSystem):
                     "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
                     "Key": str(self.get_object_uri(repo, oid)),
                 },
-                ExpiresIn=int(os.getenv("TIMONE_OBJECT_EXPIRESIN")),
+                ExpiresIn=int(
+                    os.getenv(
+                        "TIMONE_OBJECT_EXPIRESIN", timone.DEFAULT_OBJECT_EXPIRESIN
+                    )
+                ),
             )
             return url
         except ClientError as ex:
@@ -105,7 +127,11 @@ class S3Storage(StorageSystem):
                     "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
                     "Key": str(self.get_object_uri(repo, oid)),
                 },
-                ExpiresIn=int(os.getenv("TIMONE_OBJECT_EXPIRESIN")),
+                ExpiresIn=int(
+                    os.getenv(
+                        "TIMONE_OBJECT_EXPIRESIN", timone.DEFAULT_OBJECT_EXPIRESIN
+                    )
+                ),
             )
             return url
         except ClientError as ex:

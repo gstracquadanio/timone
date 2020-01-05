@@ -16,7 +16,7 @@ from timone.errors import (
     UnknownBatchOperationException,
     StorageException,
 )
-from timone.storage import DumbStorage, S3Storage
+from timone.storage import DumbStorage, S3Storage, StorageFactory
 from timone.auth import TokenAuthMiddleware
 
 
@@ -54,13 +54,16 @@ def run():
         level=logging.DEBUG,
     )
 
+    # loading the environment variables
     load_dotenv()
-    storage = getattr(
-        importlib.import_module("timone.storage"), os.getenv("TIMONE_STORAGE")
-    )
+    # get storage instance
+    storage = StorageFactory.get_storage()
+    # build new controller
     controller = BatchController(storage())
+    # build new BatchObjectResource
     resource = BatchObjectResource(controller)
+    # build REST endpoint
     server = falcon.API(middleware=[TokenAuthMiddleware()])
-    server = falcon.API()
+    # add Batch API route
     server.add_route("/{repo}/info/lfs/objects/batch", resource)
     return server

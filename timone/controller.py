@@ -1,7 +1,9 @@
 import os
+import logging
 import json
 from dataclasses import asdict
 
+import timone
 import timone.api as api
 from timone.api import (
     BatchBase,
@@ -26,7 +28,7 @@ class BatchController(object):
     def handle(self, repo, request):
         # parsing the Batch API request
         try:
-            # parse the request
+            #  parse the request
             api_request = BatchRequest(**(json.load(request.stream)))
             # check if operation is a valid one
             if (
@@ -48,7 +50,12 @@ class BatchController(object):
                         # add an upload action
                         obj.actions[api_request.operation] = BatchObjectAction(
                             self.store.get_object_upload_url(repo, obj.oid),
-                            expires_in=int(os.getenv("TIMONE_OBJECT_EXPIRESIN")),
+                            expires_in=int(
+                                os.getenv(
+                                    "TIMONE_OBJECT_EXPIRESIN",
+                                    timone.DEFAULT_OBJECT_EXPIRESIN,
+                                )
+                            ),
                         )
                     # if the requests specifies an existing object, add a download action
                     else:
@@ -59,7 +66,12 @@ class BatchController(object):
                                 # add a download action
                                 obj.actions[api_request.operation] = BatchObjectAction(
                                     self.store.get_object_download_url(repo, obj.oid),
-                                    expires_in=int(os.getenv("TIMONE_OBJECT_EXPIRESIN")),
+                                    expires_in=int(
+                                        os.getenv(
+                                            "TIMONE_OBJECT_EXPIRESIN",
+                                            timone.DEFAULT_OBJECT_EXPIRESIN,
+                                        )
+                                    ),
                                 )
                             else:
                                 # the object does not exist. Send an object error
@@ -68,6 +80,9 @@ class BatchController(object):
                                     "Object {} does not exist on {}".format(
                                         obj.oid, repo
                                     ),
+                                )
+                                logging.debug(
+                                    "{} does not exist in {} repo.".format(oid, repo)
                                 )
 
                     api_response.objects.append(obj)

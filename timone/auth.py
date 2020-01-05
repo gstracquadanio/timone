@@ -1,5 +1,6 @@
 import os
 import base64
+import logging
 
 import falcon
 import jwt
@@ -34,6 +35,8 @@ class TokenAuthMiddleware(object):
                             or username != payload["username"]
                         ):
                             raise falcon.HTTPUnauthorized("Token validation error")
+                        else:
+                            logging.debug("{} logged in.".format(username))
 
                     except jwt.exceptions.DecodeError:
                         raise falcon.HTTPUnauthorized("Token validation error")

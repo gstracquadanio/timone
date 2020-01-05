@@ -2,7 +2,7 @@
 
 Current version: 0.0.2
 
-`timone` is a lightweight object router to store Git LFS objects on different storage backend, including S3-like systems and regular file systems.
+`timone` is a lightweight object router to store Git LFS objects on different storage backend, including S3 compatible systems.
 
 `timone` implements a simple token-based authentication system based on JWT, which streamlines authentication and authorization.
 
