@@ -14,6 +14,7 @@ setup(
     version="0.0.4",
     description="timone is a lightweight object router to store Git LFS objects on different storage backend, including S3 compatible systems.",
     long_description=readme,
+    long_description_content_type="text/markdown",
     license="MIT",
     url="https://github.com/gstracquadanio/timone.git",
     keywords="",
