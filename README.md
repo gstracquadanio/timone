@@ -2,7 +2,7 @@
 ![](https://github.com/gstracquadanio/timone/workflows/Test%20package/badge.svg)
 ![](https://github.com/gstracquadanio/timone/workflows/Publish%20package/badge.svg)
 
-Current version: 0.0.3
+Current version: 0.0.4
 
 `timone` is a lightweight object router to store Git LFS objects on different storage backend, including S3 compatible systems.
 
@@ -21,7 +21,7 @@ $ pip install timone
 
 ```
 # timone service parameters
-TIMONE_ENDPOINT_URL=http://127.0.0.3:8000
+TIMONE_ENDPOINT_URL=http://127.0.0.4:8000
 TIMONE_TOKEN_SECRET=mykey
 TIMONE_STORAGE=S3Storage
 TIMONE_OBJECT_EXPIRESIN=3600
