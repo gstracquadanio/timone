@@ -11,7 +11,7 @@ setup(
     # package information
     name = 'timone',
     packages = find_packages(),
-    version = '0.0.1',
+    version = '0.0.2',
     description = 'A lightweight server to handle Git LFS on different storage backends.',
     long_description = readme,
     license = 'MIT',
