@@ -8,6 +8,7 @@ from dataclasses import asdict
 
 from dotenv import load_dotenv
 
+import timone
 import timone.api as api
 from timone.api import BatchRequest, BatchResponse
 from timone.controller import BatchController
@@ -24,11 +25,11 @@ class BatchObjectResource(object):
     def __init__(self, controller):
         self.controller = controller
 
-    def on_post(self, req, resp, owner=None, repo=None):
+    def on_post(self, req, resp, org, repo):
         # dispatching request to the controller
         try:
             # processing request
-            api_response = self.controller.handle(owner, repo, req)
+            api_response = self.controller.handle(org, repo, req)
             resp.status = falcon.HTTP_200
             resp.content_type = api.BATCH_CONTENT_TYPE
             resp.body = api_response
@@ -51,7 +52,9 @@ def run():
     # booting the logger
     logging.basicConfig(
         format="[%(asctime)s] [%(process)d] [%(module)s.%(funcName)s] [%(levelname)s] %(message)s",
-        level=logging.DEBUG,
+        level=logging.getLevelName(
+            os.getenv("TIMONE_LOG_LEVEL", timone.DEFAULT_LOG_LEVEL)
+        ),
     )
 
     # loading the environment variables
@@ -63,8 +66,8 @@ def run():
     # build new BatchObjectResource
     resource = BatchObjectResource(controller)
     # build REST endpoint
-    # server = falcon.API(middleware=[TokenAuthMiddleware()])
-    server = falcon.API()
+    server = falcon.API(middleware=[TokenAuthMiddleware()])
     # add Batch API route
-    server.add_route("/{owner}/{repo}/info/lfs/objects/batch", resource)
+    server.add_route("/{org}/{repo}/info/lfs/objects/batch", resource)
+    # return app to the WSGI server
     return server
