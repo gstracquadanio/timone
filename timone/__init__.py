@@ -8,5 +8,5 @@ __version__ = '0.0.5'
 
 # default values
 DEFAULT_ENDPOINT_URL="http://127.0.0.1:8000"
-DEFAULT_STORAGE="DumbStorage"
+DEFAULT_STORAGE="DumbStorageDriver"
 DEFAULT_OBJECT_EXPIRESIN=3600

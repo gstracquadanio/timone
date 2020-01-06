@@ -18,14 +18,14 @@ from timone.errors import (
     UnknownBatchOperationException,
     StorageException,
 )
-from timone.storage import DumbStorage
+from timone.storage import DumbStorageDriver
 
 
 class BatchController(object):
     def __init__(self, storage):
-        self.store = storage
+        self.storage = storage
 
-    def handle(self, repo, request):
+    def handle(self, owner, repo, request):
         # parsing the Batch API request
         try:
             #  parse the request
@@ -41,7 +41,7 @@ class BatchController(object):
                 # looping through the objects and adding them to the response
                 for obj in api_request.objects:
                     # checking if an object exist
-                    obj_exist = self.store.object_exists(repo, obj.oid)
+                    obj_exist = self.storage.object_exists(owner, repo, obj.oid)
                     # add an upload action if the object does not exist
                     if (
                         api_request.operation == api.BATCH_OPERATION_UPLOAD
@@ -49,7 +49,7 @@ class BatchController(object):
                     ):
                         # add an upload action
                         obj.actions[api_request.operation] = BatchObjectAction(
-                            self.store.get_object_upload_url(repo, obj.oid),
+                            self.storage.get_object_upload_url(owner, repo, obj.oid),
                             expires_in=int(
                                 os.getenv(
                                     "TIMONE_OBJECT_EXPIRESIN",
@@ -65,7 +65,9 @@ class BatchController(object):
                             if obj_exist:
                                 # add a download action
                                 obj.actions[api_request.operation] = BatchObjectAction(
-                                    self.store.get_object_download_url(repo, obj.oid),
+                                    self.storage.get_object_download_url(
+                                        owner, repo, obj.oid
+                                    ),
                                     expires_in=int(
                                         os.getenv(
                                             "TIMONE_OBJECT_EXPIRESIN",
@@ -82,7 +84,9 @@ class BatchController(object):
                                     ),
                                 )
                                 logging.debug(
-                                    "{} does not exist in {} repo.".format(oid, repo)
+                                    "{} does not exist in {} repo.".format(
+                                        obj.oid, repo
+                                    )
                                 )
 
                     api_response.objects.append(obj)

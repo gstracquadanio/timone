@@ -10,27 +10,27 @@ import timone
 from timone.errors import StorageException
 
 
-class StorageSystem(object):
+class StorageDriver(object):
     def __init__(self):
         super()
 
-    def object_exists(self, repo, oid):
+    def object_exists(self, owner, repo, oid):
         return False
 
-    def get_object_upload_url(self, repo, oid):
+    def get_object_upload_url(self, owner, repo, oid):
         return None
 
-    def get_object_download_url(self, repo, oid):
+    def get_object_download_url(self, owner, repo, oid):
         return None
 
-    def get_object_uri(self, repo, oid):
-        return Path(repo) / oid[:2] / oid[2:4] / oid
+    def get_object_uri(self, owner, repo, oid):
+        return Path(owner) / Path(repo) / oid[:2] / oid[2:4] / oid
 
-    def get_object_path(self, repo, oid, mkdir=False):
-        return self.get_object_uri(repo, oid)
+    def get_object_path(self, owner, repo, oid, mkdir=False):
+        return self.get_object_uri(owner, repo, oid)
 
 
-class StorageFactory(object):
+class StorageDriverFactory(object):
     @staticmethod
     def get_storage():
         # loading the storage system to use
@@ -46,39 +46,23 @@ class StorageFactory(object):
             )
 
 
-class DumbStorage(StorageSystem):
+class DumbStorageDriver(StorageDriver):
     def __init__(self):
         super()
         # this is purely for testing
         self.endpoint = os.getenv("TIMONE_ENDPOINT_URL", timone.DEFAULT_ENDPOINT_URL)
 
-    def object_exists(self, repo, oid):
-        logging.debug("repo: {} object: {}.".format(repo, oid))
+    def object_exists(self, owner, repo, oid):
+        logging.debug("owner: {} repo: {} object: {}.".format(owner, repo, oid))
         return True
 
-    def get_object_upload_url(self, repo, oid):
-        return "{}/{}/object/{}".format(self.endpoint, repo, oid)
+    def get_object_upload_url(self, owner, repo, oid):
+        return "{}/{}/{}/object/{}".format(self.endpoint, owner, repo, oid)
 
-    def get_object_download_url(self, repo, oid):
-        return "{}/{}/object/{}".format(self.endpoint, repo, oid)
+    def get_object_download_url(self, owner, repo, oid):
+        return "{}/{}/{}/object/{}".format(self.endpoint, owner, repo, oid)
 
-
-class FileSystemStorage(StorageSystem):
-    def __init__(self):
-        self.url = os.getenv("URL")
-        self.base_dir = Path(os.getenv("STORAGE_FS_BASE_DIR"))
-
-    def object_exists(self, repo, oid):
-        return (self.base_dir / self.get_object_uri(repo, oid)).exists()
-
-    def get_object_upload_url(self, repo, oid):
-        return self.url.format(repo, oid)
-
-    def get_object_download_url(self, repo, oid):
-        return self.url.format(repo, oid)
-
-
-class S3Storage(StorageSystem):
+class S3StorageDriver(StorageDriver):
     def __init__(self):
         self.client = boto3.client(
             "s3",
@@ -88,9 +72,9 @@ class S3Storage(StorageSystem):
             aws_secret_access_key=os.getenv("TIMONE_STORAGE_S3_SECRET"),
         )
 
-    def object_exists(self, repo, oid):
+    def object_exists(self, owner, repo, oid):
         try:
-            uri = str(self.get_object_uri(repo, oid))
+            uri = str(self.get_object_uri(owner, repo, oid))
             obj_list = self.client.list_objects_v2(
                 Bucket=os.getenv("TIMONE_STORAGE_S3_BUCKET"), Prefix=uri
             )
@@ -101,13 +85,13 @@ class S3Storage(StorageSystem):
             raise StorageException(repo, oid, "object_exists", str(ex))
         return False
 
-    def get_object_upload_url(self, repo, oid):
+    def get_object_upload_url(self, owner, repo, oid):
         try:
             url = self.client.generate_presigned_url(
                 "put_object",
                 Params={
                     "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
-                    "Key": str(self.get_object_uri(repo, oid)),
+                    "Key": str(self.get_object_uri(owner, repo, oid)),
                 },
                 ExpiresIn=int(
                     os.getenv(
@@ -119,13 +103,13 @@ class S3Storage(StorageSystem):
         except ClientError as ex:
             raise StorageException(repo, oid, "get_object_upload_url", str(ex))
 
-    def get_object_download_url(self, repo, oid):
+    def get_object_download_url(self, owner, repo, oid):
         try:
             url = self.client.generate_presigned_url(
                 "get_object",
                 Params={
                     "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
-                    "Key": str(self.get_object_uri(repo, oid)),
+                    "Key": str(self.get_object_uri(owner, repo, oid)),
                 },
                 ExpiresIn=int(
                     os.getenv(
