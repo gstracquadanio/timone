@@ -41,7 +41,7 @@ class BatchController(object):
                 # looping through the objects and adding them to the response
                 for obj in api_request.objects:
                     # checking if an object exist
-                    obj_exist = self.storage.object_exists(org, repo, obj.oid)
+                    obj_exist = self.storage.object_exists(org, repo, obj)
                     # add an upload action if the object does not exist
                     if (
                         api_request.operation == api.BATCH_OPERATION_UPLOAD
@@ -49,7 +49,7 @@ class BatchController(object):
                     ):
                         # add an upload action
                         obj.actions[api_request.operation] = BatchObjectAction(
-                            self.storage.get_object_upload_url(org, repo, obj.oid),
+                            self.storage.get_object_upload_url(org, repo, obj),
                             expires_in=int(
                                 os.getenv(
                                     "TIMONE_OBJECT_EXPIRESIN",
@@ -66,7 +66,7 @@ class BatchController(object):
                                 # add a download action
                                 obj.actions[api_request.operation] = BatchObjectAction(
                                     self.storage.get_object_download_url(
-                                        org, repo, obj.oid
+                                        org, repo, obj
                                     ),
                                     expires_in=int(
                                         os.getenv(
