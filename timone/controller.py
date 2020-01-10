@@ -76,10 +76,11 @@ class BatchController(object):
                             # check if the object exist
                             if obj_exist:
                                 # add a download action
-                                obj.actions[api_request.operation] = BatchObjectAction(
-                                    self.storage.get_object_download_url(
+                                url, auth = self.storage.get_object_download_url(
                                         org, repo, obj
-                                    ),
+                                    )
+                                obj.actions[api_request.operation] = BatchObjectAction(
+                                    url,
                                     expires_in=int(
                                         os.getenv(
                                             "TIMONE_OBJECT_EXPIRESIN",

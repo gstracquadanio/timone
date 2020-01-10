@@ -82,6 +82,10 @@ class BatchObjectStorageResource(object):
             logging.debug("Upload not implemented")
             resp.status = falcon.HTTP_501
 
+class BatchObjectLockResource(object):
+
+    def on_post(self, req, resp, org, repo):
+        resp.status = falcon.HTTP_501
 
 def run():
     # booting the logger
@@ -108,5 +112,7 @@ def run():
     server.add_route("/{org}/{repo}/info/lfs/objects/batch", resource)
     # add proxy multipart
     server.add_route("/{org}/{repo}/{oid}", storage_proxy)
+    #
+    server.add_route("/{org}/{repo}/info/lfs/locks/verify", BatchObjectLockResource())
     # return app to the WSGI server
     return server

@@ -111,6 +111,9 @@ class S3StorageDriver(StorageDriver):
 
     def get_object_upload_url(self, org, repo, obj):
         if obj.size >= self.config.multipart_threshold:
+            logging.debug(
+                "Using pass-through to upload {} of size: {}".format(obj.oid, obj.size)
+            )
             return self.get_object_upload_proxy_url(org, repo, obj), True
         else:
             try:
@@ -125,6 +128,11 @@ class S3StorageDriver(StorageDriver):
                             "TIMONE_OBJECT_EXPIRESIN", timone.DEFAULT_OBJECT_EXPIRESIN
                         )
                     ),
+                )
+                logging.debug(
+                    "Using pre-signed url to upload {} of size: {}".format(
+                        obj.oid, obj.size
+                    )
                 )
                 return url, False
             except ClientError as ex:
