@@ -74,10 +74,10 @@ class DumbStorageDriver(StorageDriver):
         return False
 
     def get_object_upload_url(self, org, repo, obj):
-        return "{}/{}/{}/object/{}".format(self.endpoint, org, repo, obj.oid)
+        return "{}/{}/{}/{}".format(self.endpoint, org, repo, obj.oid), True
 
     def get_object_download_url(self, org, repo, obj):
-        return "{}/{}/{}/object/{}".format(self.endpoint, org, repo, obj.oid)
+        return "{}/{}/{}/{}".format(self.endpoint, org, repo, obj.oid), True
 
 
 class S3StorageDriver(StorageDriver):
@@ -86,6 +86,7 @@ class S3StorageDriver(StorageDriver):
             multipart_threshold=int(
                 os.getenv("TIMONE_STORAGE_S3_MAX_FILE", timone.DEFAULT_MAX_FILE)
             )
+            * (1024 ** 3)
         )
         self.client = boto3.client(
             "s3",
@@ -109,10 +110,8 @@ class S3StorageDriver(StorageDriver):
         return False
 
     def get_object_upload_url(self, org, repo, obj):
-        if obj.size >= int(
-            os.getenv("TIMONE_STORAGE_S3_MAX_FILE", timone.DEFAULT_MAX_FILE)
-        ):
-            return self.get_object_upload_proxy_url(org, repo, obj)
+        if obj.size >= self.config.multipart_threshold:
+            return self.get_object_upload_proxy_url(org, repo, obj), True
         else:
             try:
                 url = self.client.generate_presigned_url(
@@ -127,7 +126,7 @@ class S3StorageDriver(StorageDriver):
                         )
                     ),
                 )
-                return url
+                return url, False
             except ClientError as ex:
                 raise StorageException(
                     org, repo, obj.oid, "get_object_upload_url", str(ex)
@@ -139,7 +138,7 @@ class S3StorageDriver(StorageDriver):
                 "get_object",
                 Params={
                     "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
-                    "Key": str(self.get_object_uri(org, repo, oid)),
+                    "Key": str(self.get_object_uri(org, repo, obj)),
                 },
                 ExpiresIn=int(
                     os.getenv(
@@ -147,7 +146,7 @@ class S3StorageDriver(StorageDriver):
                     )
                 ),
             )
-            return url
+            return url, False
         except ClientError as ex:
             raise StorageException(
                 org, repo, obj.oid, "get_object_download_url", str(ex)
@@ -155,7 +154,6 @@ class S3StorageDriver(StorageDriver):
 
     def upload_object(self, org, repo, obj, data):
         try:
-            logging.debug("Uploading using multipart")
             self.client.upload_fileobj(
                 data,
                 os.getenv("TIMONE_STORAGE_S3_BUCKET"),

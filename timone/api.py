@@ -17,7 +17,7 @@ class BatchBase(object):
 @dataclass
 class BatchObjectAction(BatchBase):
     href: str
-    header: str = field(default=None)
+    header: dict = field(default_factory=dict)
     expires_in: str = field(default=None)
     expires_at: str = field(default=None)
 

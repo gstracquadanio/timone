@@ -1,10 +1,14 @@
 import os
 import logging
 import json
+import base64
 from dataclasses import asdict
+
+import jwt
 
 import timone
 import timone.api as api
+from timone.auth import ObjectTokenFactory
 from timone.api import (
     BatchBase,
     BatchRequest,
@@ -48,8 +52,9 @@ class BatchController(object):
                         and not obj_exist
                     ):
                         # add an upload action
-                        obj.actions[api_request.operation] = BatchObjectAction(
-                            self.storage.get_object_upload_url(org, repo, obj),
+                        url, auth = self.storage.get_object_upload_url(org, repo, obj)
+                        action = BatchObjectAction(
+                            url,
                             expires_in=int(
                                 os.getenv(
                                     "TIMONE_OBJECT_EXPIRESIN",
@@ -57,6 +62,13 @@ class BatchController(object):
                                 )
                             ),
                         )
+                        if auth:
+                            obj.authenticated = True
+                            action.header[
+                                "Authorization"
+                            ] = "Basic " + ObjectTokenFactory.get_object_token(obj)
+                        obj.actions[api_request.operation] = action
+
                     # if the requests specifies an existing object, add a download action
                     else:
                         # check if it is a download operation
