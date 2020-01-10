@@ -86,7 +86,7 @@ class S3StorageDriver(StorageDriver):
             multipart_threshold=int(
                 os.getenv("TIMONE_STORAGE_S3_MAX_FILE", timone.DEFAULT_MAX_FILE)
             )
-            * (1024 ** 3)
+            * timone.DEFAULT_BLOCK_SIZE
         )
         self.client = boto3.client(
             "s3",

@@ -32,7 +32,7 @@ $ pip install timone
 * **TIMONE_STORAGE_S3_BUCKET**: S3 bucket name.
 * **TIMONE_STORAGE_S3_KEY**: S3 access key.
 * **TIMONE_STORAGE_S3_SECRET**: S3 access secret.
-* **TIMONE_STORAGE_S3_MAX_FILE**: max file size for direct upload (default: 1Gb).
+* **TIMONE_STORAGE_S3_MAX_FILE**: max file size for direct upload in Mb (default: 1000).
 
 ## Authentication and authorization
 `timone` implements a simple token-based authentication system based on JWT, which streamlines authentication and authorization.
