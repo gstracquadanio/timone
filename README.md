@@ -3,7 +3,7 @@
 ![](https://github.com/gstracquadanio/timone/workflows/Release%20package/badge.svg)
 [![PyPI version](https://badge.fury.io/py/timone.svg)](https://badge.fury.io/py/timone)
 
-Current version: 0.3.0
+Current version: 0.4.0
 
 `timone` is a lightweight object router to store Git LFS objects on different storage backend, including AWS S3 compatible storage services.
 
