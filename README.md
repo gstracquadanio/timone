@@ -3,7 +3,7 @@
 ![](https://github.com/gstracquadanio/timone/workflows/Release%20package/badge.svg)
 [![PyPI version](https://badge.fury.io/py/timone.svg)](https://badge.fury.io/py/timone)
 
-Current version: 0.3.2
+Current version: 0.2.0
 
 `timone` is a lightweight object router to store Git LFS objects on different storage backend, including AWS S3 compatible storage services.
 
@@ -32,7 +32,6 @@ $ pip install timone
 * **TIMONE_STORAGE_S3_BUCKET**: S3 bucket name.
 * **TIMONE_STORAGE_S3_KEY**: S3 access key.
 * **TIMONE_STORAGE_S3_SECRET**: S3 access secret.
-* **TIMONE_STORAGE_S3_MAX_FILE**: max file size for direct upload in Mb (default: 1000).
 
 ## Authentication and authorization
 `timone` implements a simple token-based authentication system based on JWT, which streamlines authentication and authorization.

@@ -5,7 +5,6 @@ from pathlib import Path
 import importlib
 
 import boto3
-from boto3.s3.transfer import TransferConfig
 from botocore.exceptions import ClientError
 
 import timone
@@ -16,34 +15,20 @@ class StorageDriver(object):
     def __init__(self):
         super()
 
-    def object_exists(self, org, repo, obj):
+    def object_exists(self, org, repo, oid):
         return False
 
-    def get_object_upload_url(self, org, repo, obj):
+    def get_object_upload_url(self, org, repo, oid):
         return None
 
-    def get_object_upload_proxy_url(self, org, repo, obj):
-        return "{}/{}/{}/{}".format(
-            os.getenv("TIMONE_ENDPOINT_URL", timone.DEFAULT_ENDPOINT_URL),
-            org,
-            repo,
-            obj.oid,
-        )
-
-    def get_object_download_url(self, org, repo, obj):
+    def get_object_download_url(self, org, repo, oid):
         return None
 
-    def get_object_uri(self, org, repo, obj):
-        return Path(org) / Path(repo) / obj.oid[:2] / obj.oid[2:4] / obj.oid
+    def get_object_uri(self, org, repo, oid):
+        return Path(org) / Path(repo) / oid[:2] / oid[2:4] / oid
 
-    def get_object_path(self, org, repo, obj, mkdir=False):
-        return self.get_object_uri(org, repo, obj)
-
-    def upload_object(self, org, repo, obj, data):
-        raise NotImplementedError()
-
-    def download_object(self, org, repo, obj):
-        raise NotImplementedError()
+    def get_object_path(self, org, repo, oid, mkdir=False):
+        return self.get_object_uri(org, repo, oid)
 
 
 class StorageDriverFactory(object):
@@ -69,25 +54,19 @@ class DumbStorageDriver(StorageDriver):
         # this is purely for testing
         self.endpoint = os.getenv("TIMONE_ENDPOINT_URL", timone.DEFAULT_ENDPOINT_URL)
 
-    def object_exists(self, org, repo, obj):
-        logging.debug("org: {} repo: {} object: {}.".format(org, repo, obj.oid))
-        return False
+    def object_exists(self, org, repo, oid):
+        logging.debug("org: {} repo: {} object: {}.".format(org, repo, oid))
+        return True
 
-    def get_object_upload_url(self, org, repo, obj):
-        return "{}/{}/{}/{}".format(self.endpoint, org, repo, obj.oid), True
+    def get_object_upload_url(self, org, repo, oid):
+        return "{}/{}/{}/object/{}".format(self.endpoint, org, repo, oid)
 
-    def get_object_download_url(self, org, repo, obj):
-        return "{}/{}/{}/{}".format(self.endpoint, org, repo, obj.oid), True
+    def get_object_download_url(self, org, repo, oid):
+        return "{}/{}/{}/object/{}".format(self.endpoint, org, repo, oid)
 
 
 class S3StorageDriver(StorageDriver):
     def __init__(self):
-        self.config = TransferConfig(
-            multipart_threshold=int(
-                os.getenv("TIMONE_STORAGE_S3_MAX_FILE", timone.DEFAULT_MAX_FILE)
-            )
-            * timone.DEFAULT_BLOCK_SIZE
-        )
         self.client = boto3.client(
             "s3",
             endpoint_url=os.getenv("TIMONE_STORAGE_S3_URL"),
@@ -96,9 +75,9 @@ class S3StorageDriver(StorageDriver):
             aws_secret_access_key=os.getenv("TIMONE_STORAGE_S3_SECRET"),
         )
 
-    def object_exists(self, org, repo, obj):
+    def object_exists(self, org, repo, oid):
         try:
-            uri = str(self.get_object_uri(org, repo, obj))
+            uri = str(self.get_object_uri(org, repo, oid))
             obj_list = self.client.list_objects_v2(
                 Bucket=os.getenv("TIMONE_STORAGE_S3_BUCKET"), Prefix=uri
             )
@@ -106,47 +85,16 @@ class S3StorageDriver(StorageDriver):
                 if obj["Key"] == uri:
                     return True
         except ClientError as ex:
-            raise StorageException(org, repo, obj.oid, "object_exists", str(ex))
+            raise StorageException(org, repo, oid, "object_exists", str(ex))
         return False
 
-    def get_object_upload_url(self, org, repo, obj):
-        if obj.size >= self.config.multipart_threshold:
-            logging.debug(
-                "Using pass-through to upload {} of size: {}".format(obj.oid, obj.size)
-            )
-            return self.get_object_upload_proxy_url(org, repo, obj), True
-        else:
-            try:
-                url = self.client.generate_presigned_url(
-                    "put_object",
-                    Params={
-                        "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
-                        "Key": str(self.get_object_uri(org, repo, obj)),
-                    },
-                    ExpiresIn=int(
-                        os.getenv(
-                            "TIMONE_OBJECT_EXPIRESIN", timone.DEFAULT_OBJECT_EXPIRESIN
-                        )
-                    ),
-                )
-                logging.debug(
-                    "Using pre-signed url to upload {} of size: {}".format(
-                        obj.oid, obj.size
-                    )
-                )
-                return url, False
-            except ClientError as ex:
-                raise StorageException(
-                    org, repo, obj.oid, "get_object_upload_url", str(ex)
-                )
-
-    def get_object_download_url(self, org, repo, obj):
+    def get_object_upload_url(self, org, repo, oid):
         try:
             url = self.client.generate_presigned_url(
-                "get_object",
+                "put_object",
                 Params={
                     "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
-                    "Key": str(self.get_object_uri(org, repo, obj)),
+                    "Key": str(self.get_object_uri(org, repo, oid)),
                 },
                 ExpiresIn=int(
                     os.getenv(
@@ -154,20 +102,24 @@ class S3StorageDriver(StorageDriver):
                     )
                 ),
             )
-            return url, False
+            return url
         except ClientError as ex:
-            raise StorageException(
-                org, repo, obj.oid, "get_object_download_url", str(ex)
-            )
+            raise StorageException(org, repo, oid, "get_object_upload_url", str(ex))
 
-    def upload_object(self, org, repo, obj, data):
+    def get_object_download_url(self, org, repo, oid):
         try:
-            self.client.upload_fileobj(
-                data,
-                os.getenv("TIMONE_STORAGE_S3_BUCKET"),
-                str(self.get_object_uri(org, repo, obj)),
-                Config=self.config,
+            url = self.client.generate_presigned_url(
+                "get_object",
+                Params={
+                    "Bucket": os.getenv("TIMONE_STORAGE_S3_BUCKET"),
+                    "Key": str(self.get_object_uri(org, repo, oid)),
+                },
+                ExpiresIn=int(
+                    os.getenv(
+                        "TIMONE_OBJECT_EXPIRESIN", timone.DEFAULT_OBJECT_EXPIRESIN
+                    )
+                ),
             )
+            return url
         except ClientError as ex:
-            raise StorageException(org, repo, obj.oid, "object_upload_proxy", str(ex))
-
+            raise StorageException(org, repo, oid, "get_object_download_url", str(ex))

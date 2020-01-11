@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 import timone
 import timone.api as api
-from timone.api import BatchRequest, BatchResponse, BatchObject
+from timone.api import BatchRequest, BatchResponse
 from timone.controller import BatchController
 from timone.errors import (
     BadBatchRequestException,
@@ -48,45 +48,6 @@ class BatchObjectResource(object):
             resp.status = falcon.HTTP_501
 
 
-class BatchObjectStorageResource(object):
-    def __init__(self, storage):
-        self.storage = storage
-
-    def on_get(self, req, resp, org, repo, oid):
-        try:
-            logging.debug("Downloading: {}".format(oid))
-            obj = BatchObject(oid=oid, size=req.content_length)
-            self.storage.download_object(org, repo, obj)
-            resp.status = falcon.HTTP_200
-        except StorageException as ex:
-            # something wrong happend while access
-            # an object
-            logging.debug(str(ex))
-            resp.status = falcon.HTTP_501
-        except NotImplementedError:
-            logging.debug("Download not implemented")
-            resp.status = falcon.HTTP_501
-
-    def on_put(self, req, resp, org, repo, oid):
-        try:
-            logging.debug("Uploading: {}".format(oid))
-            obj = BatchObject(oid=oid, size=req.content_length)
-            self.storage.upload_object(org, repo, obj, req.stream)
-            resp.status = falcon.HTTP_200
-        except StorageException as ex:
-            # something wrong happend while access
-            # an object
-            logging.debug(str(ex))
-            resp.status = falcon.HTTP_501
-        except NotImplementedError:
-            logging.debug("Upload not implemented")
-            resp.status = falcon.HTTP_501
-
-class BatchObjectLockResource(object):
-
-    def on_post(self, req, resp, org, repo):
-        resp.status = falcon.HTTP_501
-
 def run():
     # booting the logger
     logging.basicConfig(
@@ -104,15 +65,9 @@ def run():
     controller = BatchController(storage())
     # build new BatchObjectResource
     resource = BatchObjectResource(controller)
-    # proxy for Large Batch Object
-    storage_proxy = BatchObjectStorageResource(storage())
     # build REST endpoint
-    server = falcon.API(middleware=TokenAuthMiddleware())
+    server = falcon.API(middleware=[TokenAuthMiddleware()])
     # add Batch API route
     server.add_route("/{org}/{repo}/info/lfs/objects/batch", resource)
-    # add proxy multipart
-    server.add_route("/{org}/{repo}/{oid}", storage_proxy)
-    #
-    server.add_route("/{org}/{repo}/info/lfs/locks/verify", BatchObjectLockResource())
     # return app to the WSGI server
     return server

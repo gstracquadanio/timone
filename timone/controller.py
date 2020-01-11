@@ -1,14 +1,10 @@
 import os
 import logging
 import json
-import base64
 from dataclasses import asdict
-
-import jwt
 
 import timone
 import timone.api as api
-from timone.auth import ObjectTokenFactory
 from timone.api import (
     BatchBase,
     BatchRequest,
@@ -45,16 +41,15 @@ class BatchController(object):
                 # looping through the objects and adding them to the response
                 for obj in api_request.objects:
                     # checking if an object exist
-                    obj_exist = self.storage.object_exists(org, repo, obj)
+                    obj_exist = self.storage.object_exists(org, repo, obj.oid)
                     # add an upload action if the object does not exist
                     if (
                         api_request.operation == api.BATCH_OPERATION_UPLOAD
                         and not obj_exist
                     ):
                         # add an upload action
-                        url, auth = self.storage.get_object_upload_url(org, repo, obj)
-                        action = BatchObjectAction(
-                            url,
+                        obj.actions[api_request.operation] = BatchObjectAction(
+                            self.storage.get_object_upload_url(org, repo, obj.oid),
                             expires_in=int(
                                 os.getenv(
                                     "TIMONE_OBJECT_EXPIRESIN",
@@ -62,13 +57,6 @@ class BatchController(object):
                                 )
                             ),
                         )
-                        if auth:
-                            obj.authenticated = True
-                            action.header[
-                                "Authorization"
-                            ] = "Basic " + ObjectTokenFactory.get_object_token(obj)
-                        obj.actions[api_request.operation] = action
-
                     # if the requests specifies an existing object, add a download action
                     else:
                         # check if it is a download operation
@@ -76,11 +64,10 @@ class BatchController(object):
                             # check if the object exist
                             if obj_exist:
                                 # add a download action
-                                url, auth = self.storage.get_object_download_url(
-                                        org, repo, obj
-                                    )
                                 obj.actions[api_request.operation] = BatchObjectAction(
-                                    url,
+                                    self.storage.get_object_download_url(
+                                        org, repo, obj.oid
+                                    ),
                                     expires_in=int(
                                         os.getenv(
                                             "TIMONE_OBJECT_EXPIRESIN",
