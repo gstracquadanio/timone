@@ -11,7 +11,7 @@ setup(
     # package information
     name="timone",
     packages=find_packages(),
-    version="0.2.0",
+    version="0.3.0",
     description="A lightweight object router to store Git LFS objects on different storage backend.",
     long_description=readme,
     long_description_content_type="text/markdown",
